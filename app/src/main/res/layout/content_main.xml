@@ -13,36 +13,4 @@
     tools:context="local.doctor.blinker.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:ems="10"
-        android:layout_marginTop="54dp"
-        android:id="@+id/lengthPause"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:hint="pause duration" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:ems="10"
-        android:layout_marginTop="49dp"
-        android:id="@+id/lenghtSignal"
-        android:layout_below="@+id/lengthPause"
-        android:layout_alignStart="@+id/lengthPause"
-        android:hint="signal duration" />
-
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:inputType="numberDecimal"
-        android:ems="10"
-        android:layout_marginTop="57dp"
-        android:id="@+id/numSignal"
-        android:layout_below="@+id/lenghtSignal"
-        android:layout_alignStart="@+id/lenghtSignal"
-        android:hint="number of signals" />
 </RelativeLayout>

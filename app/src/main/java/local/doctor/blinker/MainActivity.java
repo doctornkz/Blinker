@@ -1,62 +1,95 @@
 package local.doctor.blinker;
 
 import android.content.Context;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
 import android.hardware.camera2.CameraManager;
+import android.widget.Toast;
+
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
-    private EditText lenPause;
-    private EditText lenSignal;
-    private EditText numSignal;
     private String TAG = "Blinker";
     private Boolean existCamera = true;
-    private CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-
+    private Boolean flashAvailable = false;
+    private String cameraId;
+    CameraManager manager;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.d(TAG, "onCreate step");
+        try {
+            CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            String[] id = manager.getCameraIdList();
+            Log.d(TAG, "Found camera(s) " + Arrays.toString(id));
+            for (String camId: id){
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+                CameraCharacteristics characteristics = manager.getCameraCharacteristics(camId);
+                Log.d(TAG, "Checking camera flashlight in camera " + camId);
+                flashAvailable = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                if (flashAvailable){
+                    Log.d(TAG, "Found camera flashlight in camera " + camId);
+                    cameraId = camId;
+                    break;
+
+                } else {
+                    Log.d(TAG, "Sorry, your camera " + camId + " doesn't have flashlight!");
+                    Toast.makeText(this, "Flashlight not found",Toast.LENGTH_LONG).show();
+
+                }
+
+
+            }
+        } catch (CameraAccessException e) {
+            Log.d(TAG, "Failed to interact with camera.", e);
+
+        }
+
+
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                lenPause = (EditText)findViewById(R.id.lengthPause);
-                int lenPauseInt = Integer.parseInt(lenPause.getText().toString());
-                lenSignal = (EditText)findViewById(R.id.lenghtSignal);
-                int lenSignalInt = Integer.parseInt(lenSignal.getText().toString());
-                numSignal = (EditText)findViewById(R.id.numSignal);
-                int numSignalInt = Integer.parseInt(numSignal.getText().toString());
-                Log.d(TAG, "Timing detected:" + lenPause.getText().toString() + " " + lenSignal.getText().toString() + " " + numSignal.getText().toString());
-
-                if (existCamera) {
+                if (existCamera && flashAvailable) {
+                    Log.d(TAG, "Using cam " + cameraId + " on Click step");
+                    //200...1000
+                    int minimum = 200;
+                    int maximum = 1000;
+                    int numSignal = 10;
+                    //int myRand = minimum + (int)(Math.random() * (maximum - minimum));
+                  Toast.makeText(getApplicationContext(), "10 Cycles with random timings", Toast.LENGTH_LONG).show();
                     try {
-                        for (int num = 0;  num < numSignalInt ; num++) {
-                            Log.d(TAG, "Starting in flashlight cycle. Sleeping " + lenPause.getText().toString() + " sec");
-                            Thread.sleep(lenPauseInt * 1000);
-                            Log.d(TAG, "Turning on flashlight for " + lenPause.getText().toString() + " sec ");
-                            manager.setTorchMode("0", true);
-                            Log.d(TAG, "Waiting with flashlight for " + lenSignal.getText().toString() + " sec ");
-                            Thread.sleep(lenSignalInt * 1000);
+                        for (int num = 0;  num < numSignal ; num++) {
+                            int lenPauseInt = minimum + (int)(Math.random() * (maximum - minimum));
+                            Log.d(TAG, "Starting in flashlight cycle. Sleeping " + lenPauseInt + " sec");
+                            Thread.sleep(lenPauseInt);
+                            int lenSignalInt = minimum + (int)(Math.random() * (maximum - minimum));
+                            Log.d(TAG, "Turning on flashlight for "+ Integer.toString(lenSignalInt)+" sec ");
+                            manager.setTorchMode(cameraId, true); //Only for 6.0 , API 23
+                            Log.d(TAG, "Waiting with flashlight for " + Integer.toString(lenSignalInt) + "sec ");
+                            Thread.sleep(lenSignalInt);
                             Log.d(TAG, "Turning off flashlight. Cycle finished");
-                            manager.setTorchMode("0", false);
+                            manager.setTorchMode(cameraId, false); //Only for 6.0 , API 23
+                            Log.d(TAG, "Cycle number " + Integer.toString(num));
+
                         }
-                        Log.d(TAG, "onStart:Camera switched ON by switch");
                     } catch (Exception ex) {
                         ex.printStackTrace();
-                        Log.d(TAG, "onStart:Switch ON failed");
+                        Log.d(TAG, "Camera management failed");
                     }
 
             }
@@ -64,11 +97,8 @@ public class MainActivity extends AppCompatActivity {
     });
 
     }
-
     public void onStart(){
         super.onStart();
-
-
 
     }
     @Override
