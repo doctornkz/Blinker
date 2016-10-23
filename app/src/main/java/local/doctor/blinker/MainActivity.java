@@ -15,13 +15,10 @@ import android.util.Log;
 import android.view.View;
 import android.hardware.camera2.CameraManager;
 import android.widget.Toast;
-
-
 import java.util.Arrays;
 
 
 public class MainActivity extends AppCompatActivity {
-
     private String TAG = "Blinker";
     private Boolean existCamera = true;
     private Boolean flashAvailable = false;
@@ -64,19 +61,14 @@ public class MainActivity extends AppCompatActivity {
 
                             if (apiVer > 22) {
                                 Log.d(TAG, "New API detected");
-                                manager.setTorchMode(cameraId, true); //Only for 6.0 , API 23
+                                manager.setTorchMode(cameraId, true);
                             } else {
                                 try {
                                     Log.d(TAG, "Old API detected. Try to use flashlight");
-                                    //camera.release();
-                                    Log.d(TAG,"release");
                                     camera = Camera.open();
-                                    Log.d(TAG,"open");
                                     final Parameters p = camera.getParameters();
                                     p.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                                    Log.d(TAG,"set param");
                                     camera.setParameters(p);
-                                    Log.d(TAG,"catch");
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                     Log.d(TAG, "Flashlight goes wrong");
@@ -88,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
                             if (apiVer > 22) {
                                 Log.d(TAG, "New API detected");
-                                manager.setTorchMode(cameraId, false); //Only for 6.0 , API 23
+                                manager.setTorchMode(cameraId, false);
                             } else {
                                 Log.d(TAG, "Old API detected.");
                                 try {
@@ -111,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     });
-
     }
 
     private void camInit22() {
