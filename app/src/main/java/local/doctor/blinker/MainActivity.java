@@ -1,8 +1,12 @@
 package local.doctor.blinker;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -12,7 +16,9 @@ import android.view.View;
 import android.hardware.camera2.CameraManager;
 import android.widget.Toast;
 
+
 import java.util.Arrays;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -20,13 +26,113 @@ public class MainActivity extends AppCompatActivity {
     private Boolean existCamera = true;
     private Boolean flashAvailable = false;
     private String cameraId;
-    CameraManager manager;
+    public Camera camera;
+    public CameraManager manager;
+    public int minimum = 200;
+    public int maximum = 1000;
+    public int numSignal = 10;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.d(TAG, "onCreate step");
+        final int apiVer = Build.VERSION.SDK_INT;
+        Log.d(TAG, "onCreate step, version API " + Integer.toString(apiVer));
+        if (apiVer > 22) {
+            camInit22Plus();
+        } else {
+            camInit22();
+        }
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (existCamera && flashAvailable) {
+                    if (apiVer > 22) {
+                        Log.d(TAG, "Using cam " + cameraId + " on Click step");
+                    }
+                    Toast.makeText(getApplicationContext(), "10 Cycles with random timings", Toast.LENGTH_LONG).show();
+                    try {
+                        for (int num = 0;  num <= numSignal ; num++) {
+                            int lenPauseInt = minimum + (int)(Math.random() * (maximum - minimum));
+                            Log.d(TAG, "Starting in flashlight cycle. Sleeping " + lenPauseInt + " sec");
+                            Thread.sleep(lenPauseInt);
+                            int lenSignalInt = minimum + (int)(Math.random() * (maximum - minimum));
+                            Log.d(TAG, "Turning on flashlight for "+ Integer.toString(lenSignalInt)+" sec ");
+
+                            if (apiVer > 22) {
+                                Log.d(TAG, "New API detected");
+                                manager.setTorchMode(cameraId, true); //Only for 6.0 , API 23
+                            } else {
+                                try {
+                                    Log.d(TAG, "Old API detected. Try to use flashlight");
+                                    //camera.release();
+                                    Log.d(TAG,"release");
+                                    camera = Camera.open();
+                                    Log.d(TAG,"open");
+                                    final Parameters p = camera.getParameters();
+                                    p.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                                    Log.d(TAG,"set param");
+                                    camera.setParameters(p);
+                                    Log.d(TAG,"catch");
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                    Log.d(TAG, "Flashlight goes wrong");
+                                }
+                            }
+                            Log.d(TAG, "Waiting with flashlight for " + Integer.toString(lenSignalInt) + "sec ");
+                            Thread.sleep(lenSignalInt);
+                            Log.d(TAG, "Turning off flashlight. Cycle finished");
+
+                            if (apiVer > 22) {
+                                Log.d(TAG, "New API detected");
+                                manager.setTorchMode(cameraId, false); //Only for 6.0 , API 23
+                            } else {
+                                Log.d(TAG, "Old API detected.");
+                                try {
+                                    final Parameters p = camera.getParameters();
+                                    p.setFlashMode(Parameters.FLASH_MODE_OFF);
+                                    camera.setParameters(p);
+                                    camera.release();
+                                    Log.d(TAG, "Flashlight turning off");
+                                } catch (Exception ex){
+                                    ex.printStackTrace();
+                                    Log.d(TAG, "Flashlight turning off failed");
+                                }
+                            }
+                            Log.d(TAG, "Cycle number " + Integer.toString(num));
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        Log.d(TAG, "Camera management failed");
+                    }
+            }
+        }
+    });
+
+    }
+
+    private void camInit22() {
+        try {
+            Log.d(TAG, "API 22 way camera initializing");
+            final Context context = this;
+            PackageManager pm = context.getPackageManager();
+            if (!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                Log.d(TAG, "onStart:Device has no camera");
+                existCamera = false;
+            } else {
+                flashAvailable = true;
+            }
+
+        } catch (Exception ex){
+            ex.printStackTrace();
+            Log.d(TAG, "Failed to interact with camera.", ex);
+        }
+    }
+
+    private void camInit22Plus() {
         try {
             CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
             String[] id = manager.getCameraIdList();
@@ -40,63 +146,16 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Found camera flashlight in camera " + camId);
                     cameraId = camId;
                     break;
-
                 } else {
                     Log.d(TAG, "Sorry, your camera " + camId + " doesn't have flashlight!");
                     Toast.makeText(this, "Flashlight not found",Toast.LENGTH_LONG).show();
-
                 }
-
-
             }
         } catch (CameraAccessException e) {
             Log.d(TAG, "Failed to interact with camera.", e);
-
         }
-
-
-        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (existCamera && flashAvailable) {
-                    Log.d(TAG, "Using cam " + cameraId + " on Click step");
-                    //200...1000
-                    int minimum = 200;
-                    int maximum = 1000;
-                    int numSignal = 10;
-                    //int myRand = minimum + (int)(Math.random() * (maximum - minimum));
-                  Toast.makeText(getApplicationContext(), "10 Cycles with random timings", Toast.LENGTH_LONG).show();
-                    try {
-                        for (int num = 0;  num < numSignal ; num++) {
-                            int lenPauseInt = minimum + (int)(Math.random() * (maximum - minimum));
-                            Log.d(TAG, "Starting in flashlight cycle. Sleeping " + lenPauseInt + " sec");
-                            Thread.sleep(lenPauseInt);
-                            int lenSignalInt = minimum + (int)(Math.random() * (maximum - minimum));
-                            Log.d(TAG, "Turning on flashlight for "+ Integer.toString(lenSignalInt)+" sec ");
-                            manager.setTorchMode(cameraId, true); //Only for 6.0 , API 23
-                            Log.d(TAG, "Waiting with flashlight for " + Integer.toString(lenSignalInt) + "sec ");
-                            Thread.sleep(lenSignalInt);
-                            Log.d(TAG, "Turning off flashlight. Cycle finished");
-                            manager.setTorchMode(cameraId, false); //Only for 6.0 , API 23
-                            Log.d(TAG, "Cycle number " + Integer.toString(num));
-
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        Log.d(TAG, "Camera management failed");
-                    }
-
-            }
-        }
-    });
-
     }
+
     public void onStart(){
         super.onStart();
 
